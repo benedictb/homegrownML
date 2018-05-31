@@ -13,21 +13,28 @@ class BoostedTrees(object):
             self.d, self.t = data.generate(n, num_features=n_features)
             assert len(self.d) == len(self.t)
         else:
-            d = data.loadIris()
-            self.d, self.t, self.testd, self.testt = data.split(d)
+            # d = data.loadIris()
+            # self.d, self.t, self.testd, self.testt = data.split(d)
+            # self.n = len(self.d)
+
+            # self.d, self.t = data.loadCredit()
+            self.d, self.t, self.testd, self.testt = data.loadCredit()
             self.n = len(self.d)
 
-        # self.stumps = self.makeStumps()
+        print("Data shape: {}".format(self.d.shape))
+
         self.stumps = self.makeFewerStumps()
 
-        self.weights = np.ones((n,)) * float(1 / n)
+        print("Tree space: {}".format(len(self.stumps)))
+
+        self.weights = np.ones((self.n,)) * float(1 / self.n)
         self.alphas = []
         self.H = []
         self.acc = []
 
     def generate_model(self):
         i = 0
-        while self.test(self.d, self.t) < 1:
+        while self.test(self.d, self.t) < 1 and i < 3:
             print("Iteration {}".format(i+1))
 
             try:
@@ -157,5 +164,5 @@ class BoostedTrees(object):
 
 
 if __name__ == '__main__':
-    btm = BoostedTrees(rand=True, n=500, n_features=5)
+    btm = BoostedTrees(rand=False, n=500, n_features=5)
     btm.generate_model()
