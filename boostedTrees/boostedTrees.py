@@ -32,10 +32,67 @@ class BoostedTrees(object):
         self.H = []
         self.acc = []
 
+    def makeStumps(self):
+        rules = []
+        for dim in range(self.d.shape[1]):
+            # For now make all the rules, then reduce later
+            rules.append(self.makeRule(1, 1, dim, self.d[0, dim]))
+            rules.append(self.makeRule(1, -1, dim, self.d[0, dim]))
+
+            # counter = 0
+            for i in range(self.d.shape[0] - 1):
+                r1 = self.makeRule(0, 1, dim, self.d[i, dim])
+                r2 = self.makeRule(0, -1, dim, self.d[i, dim])
+
+                rules.append(r1)
+                rules.append(r2)
+
+        return rules
+
+    # Uses Thank God Hole No. 2
+    def makeFewerStumps(self):
+        rules = []
+        for dim in range(self.d.shape[1]):
+            attrs = [(self.d[i, dim], self.t[i]) for i in range(self.n)]
+
+            rules.append(self.makeRule(0, 1, dim, attrs[0][0]))
+            rules.append(self.makeRule(0, -1, dim, attrs[0][0]))
+            curr = None
+
+            i = 0
+            while i < self.n - 1:
+                # print(i)
+                while attrs[i][1] == curr and i < self.n - 1:
+                    i += 1
+                rules.append(self.makeRule(1, 1, dim, attrs[i][0]))
+                rules.append(self.makeRule(1, -1, dim, attrs[i][0]))
+                curr = attrs[i][1]
+                i += 1
+
+        return rules
+
+    def makeRule(self, direct, target, dim, v):
+        if direct == 0:
+            def func(x):
+                if x[dim] < v:
+                    return target
+                else:
+                    return -1 * target
+
+            return func
+        else:
+            def func(x):
+                if x[dim] >= v:
+                    return target
+                else:
+                    return -1 * target
+
+            return func
+
     def generate_model(self):
         i = 0
         while self.test(self.d, self.t) < 1 and i < 3:
-            print("Iteration {}".format(i+1))
+            print("Iteration {}".format(i + 1))
 
             try:
                 stump = self.next_stump()
@@ -43,7 +100,7 @@ class BoostedTrees(object):
                 print("Out of stumps! Using best model...")
                 idx = self.acc.index(max(self.acc))
                 print("Best model is iteration {} with accuracy {}".format(idx, self.acc[idx]))
-                self.H = self.H[:min(idx+1,len(self.acc))]
+                self.H = self.H[:min(idx + 1, len(self.acc))]
                 break
 
             error = self.get_error(stump)
@@ -63,7 +120,7 @@ class BoostedTrees(object):
             self.acc.append(acc)
 
             self.reweight(stump)
-            i+=1
+            i += 1
 
         if self.r == False:
             print("Testing on independent set")
@@ -103,64 +160,6 @@ class BoostedTrees(object):
     def predict(self, x):
         raw = sum([self.alphas[i] * self.H[i](x) for i in range(len(self.H))])
         return 1 if raw >= 0 else -1
-
-    def makeRule(self, direct, target, dim, v):
-        if direct == 0:
-            def func(x):
-                if x[dim] < v:
-                    return target
-                else:
-                    return -1 * target
-
-            return func
-        else:
-            def func(x):
-                if x[dim] >= v:
-                    return target
-                else:
-                    return -1 * target
-
-            return func
-
-    def makeStumps(self):
-        rules = []
-        for dim in range(self.d.shape[1]):
-            # For now make all the rules, then reduce later
-            rules.append(self.makeRule(1, 1, dim, self.d[0, dim]))
-            rules.append(self.makeRule(1, -1, dim, self.d[0, dim]))
-
-            # counter = 0
-            for i in range(self.d.shape[0] - 1):
-                r1 = self.makeRule(0, 1, dim, self.d[i, dim])
-                r2 = self.makeRule(0, -1, dim, self.d[i, dim])
-
-                rules.append(r1)
-                rules.append(r2)
-
-        return rules
-
-    # Uses Thank God Hole No. 2
-    # Doesn't provide the same results. Not entirely sure why
-    def makeFewerStumps(self):
-        rules = []
-        for dim in range(self.d.shape[1]):
-            attrs = [(self.d[i, dim], self.t[i]) for i in range(self.n)]
-
-            rules.append(self.makeRule(0, 1, dim, attrs[0][0]))
-            rules.append(self.makeRule(0, -1, dim, attrs[0][0]))
-            curr = None
-
-            i = 0
-            while i < self.n - 1:
-                # print(i)
-                while attrs[i][1] == curr and i < self.n - 1:
-                    i += 1
-                rules.append(self.makeRule(1, 1, dim, attrs[i][0]))
-                rules.append(self.makeRule(1, -1, dim, attrs[i][0]))
-                curr = attrs[i][1]
-                i += 1
-
-        return rules
 
 
 if __name__ == '__main__':
